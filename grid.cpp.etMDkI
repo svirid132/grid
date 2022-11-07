@@ -1,0 +1,966 @@
+#include "grid.h"
+
+#include <QDebug>
+#include <QDebug>
+#include <QLabel>
+#include <QMatrix4x4>
+#include <QMouseEvent>
+#include <QPainter>
+#include <QPoint>
+#include <QPushButton>
+#include <QSpinBox>
+#include <QVector2D>
+#include <QVector3D>
+#include <QtMath>
+
+Grid::Grid(QWidget *parent)
+    : QWidget{parent}
+{
+    this->initPoints();
+    this->setMouseTracking(true);
+
+//    setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
+
+//    setAttribute(Qt::WA_NoSystemBackground);
+//    setAttribute(Qt::WA_TranslucentBackground);
+//    setAttribute(Qt::WA_PaintOnScreen);
+
+    //    setAttribute(Qt::WA_TransparentForMouseEvents);
+    //    setFixedSize(860, 640);
+
+    //Правильно
+    //    QPoint(962,921) QPoint(-370005,148091) 1 гор +
+    //    QPoint(962,158) QPoint(-370005,-147011) 2 гор +
+    //    QPoint(962,921) QPoint(962,158) 1 вер +
+    //    QPoint(-370005,148091) QPoint(-370005,-147011) 2 вер
+
+    //Неправильно
+    //    QPoint(945,921) QPoint(66470,-25519) 1 гор -
+    //    QPoint(945,158) QPoint(66470,26599) 2 гор -
+    //    QPoint(945,921) QPoint(945,158) 1 вер +
+    //    QPoint(66470,-25519) QPoint(66470,26599) 2 вер
+
+    QSpinBox* boxX = new QSpinBox(this);
+    boxX->setValue(gridData.x);
+    boxX->setPrefix("X: ");
+    boxX->setStyleSheet("background-color: white;");
+    boxX->setGeometry(600, 150, 100, 30);
+    boxX->setRange(-85, 85);
+    connect(boxX, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int x) {
+        GridData data = this->getGridData();
+        data.x = x;
+        this->setGridData(data);
+    });
+
+    //    QPushButton* btnMinusX = new QPushButton("Уменьшить X", this);
+    //    btnMinusX->setStyleSheet("background-color: #9c27b0;");
+    //    btnMinusX->setGeometry(600, 200, 100, 30);
+    //    connect(btnMinusX, &QPushButton::clicked, [this, boxX]() {
+    //        this->x -= 0.1;
+    //        boxX->setValue(x);
+    //        this->repaint();
+    //    });
+
+    //    QPushButton* btnPlusX = new QPushButton("Увеличить X", this);
+    //    btnPlusX->setStyleSheet("background-color: #9c27b0;");
+    //    btnPlusX->setGeometry(710, 200, 100, 30);
+    //    connect(btnPlusX, &QPushButton::clicked, [this, boxX]() {
+    //        this->x += 0.1;
+    //        boxX->setValue(y);
+    //        this->repaint();
+    //    });
+
+    QSpinBox* boxY = new QSpinBox(this);
+    boxY->setValue(gridData.y);
+    boxY->setPrefix("Y: ");
+    boxY->setStyleSheet("background-color: white;");
+    boxY->setGeometry(600, 200, 100, 30);
+    boxY->setRange(-85, 85);
+    connect(boxY, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int y) {
+        GridData data = this->getGridData();
+        data.y = y;
+        this->setGridData(data);
+    });
+
+    //    QLabel* labelY = new QLabel("Y: " + QString::number(y), this);
+    //    labelY->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+    //    labelY->setStyleSheet("background-color: white;");
+    //    labelY->setGeometry(600, 250, 100, 30);
+
+    //    QPushButton* btnMinusY = new QPushButton("Уменьшить Y", this);
+    //    btnMinusY->setStyleSheet("background-color: #9c27b0;");
+    //    btnMinusY->setGeometry(600, 300, 100, 30);
+    //    connect(btnMinusY, &QPushButton::clicked, [this, labelY]() {
+    //        this->y -= 0.1;
+    //        labelY->setText("Y: " + QString::number(y));
+    //        this->repaint();
+    //    });
+
+    //    QPushButton* btnPlusY = new QPushButton("Увеличить Y", this);
+    //    btnPlusY->setStyleSheet("background-color: #9c27b0;");
+    //    btnPlusY->setGeometry(710, 300, 100, 30);
+    //    connect(btnPlusY, &QPushButton::clicked, [this, labelY]() {
+    //        this->y += 0.1;
+    //        labelY->setText("Y: " + QString::number(y));
+    //        this->repaint();
+    //    });
+
+    QSpinBox* boxZ = new QSpinBox(this);
+    boxZ->setValue(0);
+    boxZ->setPrefix("rotationZ: ");
+    boxZ->setStyleSheet("background-color: white;");
+    boxZ->setGeometry(600, 250, 100, 30);
+    boxZ->setRange(-180, 180);
+    connect(boxZ, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int z) {
+        GridData data = this->getGridData();
+        data.rotationZ = z;
+        this->setGridData(data);
+    });
+
+    //    QPushButton* btnMinusZ = new QPushButton("Уменьшить Z", this);
+    //    btnMinusZ->setStyleSheet("background-color: #9c27b0;");
+    //    btnMinusZ->setGeometry(600, 400, 100, 30);
+    //    connect(btnMinusZ, &QPushButton::clicked, [this, labelY]() {
+    //        this->y -= 0.1;
+    //        labelY->setText("Y: " + QString::number(y));
+    //        this->repaint();
+    //    });
+
+    //    QPushButton* btnPlusZ = new QPushButton("Увеличить Z", this);
+    //    btnPlusZ->setStyleSheet("background-color: #9c27b0;");
+    //    btnPlusZ->setGeometry(710, 400, 100, 30);
+    //    connect(btnPlusZ, &QPushButton::clicked, [this, labelY]() {
+    //        this->y += 0.1;
+    //        labelY->setText("Y: " + QString::number(y));
+    //        this->repaint();
+    //    });
+
+    QSpinBox* boxHeight = new QSpinBox(this);
+    boxHeight->setPrefix("height: ");
+    boxHeight->setStyleSheet("background-color: white;");
+    boxHeight->setGeometry(600, 300, 100, 30);
+    boxHeight->setRange(1, 100000);
+    boxHeight->setValue(gridData.height);
+    connect(boxHeight, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int h) {
+        GridData data = this->getGridData();
+        data.height = h;
+        this->setGridData(data);
+    });
+
+    QSpinBox* boxScale = new QSpinBox(this);
+    boxScale->setValue(gridData.scale);
+    boxScale->setPrefix("scale: ");
+    boxScale->setStyleSheet("background-color: white;");
+    boxScale->setGeometry(600, 350, 100, 30);
+    boxScale->setRange(1, 100);
+    connect(boxScale, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int h) {
+        GridData data = this->getGridData();
+        data.scale = h;
+        this->setGridData(data);
+    });
+
+    QSpinBox* boxPitchingX = new QSpinBox(this);
+    boxPitchingX->setValue(0);
+    boxPitchingX->setPrefix("pitchingX: ");
+    boxPitchingX->setStyleSheet("background-color: white;");
+    boxPitchingX->setGeometry(600, 400, 100, 30);
+    boxPitchingX->setRange(-180, 180);
+    connect(boxPitchingX, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int pitchingX) {
+        GridData data = this->getGridData();
+        data.pitchingX = pitchingX;
+        this->setGridData(data);
+    });
+
+    QSpinBox* boxPitchingY = new QSpinBox(this);
+    boxPitchingY->setValue(0);
+    boxPitchingY->setPrefix("pitchingY: ");
+    boxPitchingY->setStyleSheet("background-color: white;");
+    boxPitchingY->setGeometry(600, 450, 100, 30);
+    boxPitchingY->setRange(-180, 180);
+    connect(boxPitchingY, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int pitchingY) {
+        GridData data = this->getGridData();
+        data.pitchingY = pitchingY;
+        this->setGridData(data);
+    });
+
+    qDebug() << near;
+    QSpinBox* boxNear = new QSpinBox(this);
+    boxNear->setPrefix("near: ");
+    boxNear->setStyleSheet("background-color: white;");
+    boxNear->setGeometry(600, 500, 100, 30);
+    boxNear->setRange(-100000, 100000);
+    boxNear->setValue(near);
+    connect(boxNear, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int near) {
+        this->near = near;
+        this->repaint();
+    });
+
+    QSpinBox* boxFar = new QSpinBox(this);
+    boxFar->setPrefix("far: ");
+    boxFar->setStyleSheet("background-color: white;");
+    boxFar->setGeometry(600, 550, 100, 30);
+    boxFar->setRange(-10000, 10000);
+    boxFar->setValue(far);
+    connect(boxFar, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int far) {
+        this->far = far;
+        this->repaint();
+    });
+
+    QSpinBox* boxCameraZ = new QSpinBox(this);
+    boxCameraZ->setPrefix("cameraZ: ");
+    boxCameraZ->setStyleSheet("background-color: white;");
+    boxCameraZ->setGeometry(600, 600, 100, 30);
+    boxCameraZ->setRange(-10000, 10000);
+    boxCameraZ->setValue(cameraZ);
+    connect(boxCameraZ, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int cameraZ) {
+        this->cameraZ = cameraZ;
+        this->repaint();
+    });
+
+    QSpinBox* boxb = new QSpinBox(this);
+    boxb->setPrefix("b: ");
+    boxb->setStyleSheet("background-color: white;");
+    boxb->setGeometry(600, 650, 100, 30);
+    boxb->setRange(1, 10000);
+    boxb->setValue(bmm);
+    connect(boxb, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int bmm) {
+        this->bmm = bmm;
+        this->repaint();
+    });
+
+    QDoubleSpinBox* boxAlpha = new QDoubleSpinBox(this);
+    boxAlpha->setPrefix("alpha: ");
+    boxAlpha->setStyleSheet("background-color: white;");
+    boxAlpha->setGeometry(600, 700, 100, 30);
+    boxAlpha->setRange(1, 10000);
+    boxAlpha->setValue(alpha);
+    connect(boxAlpha, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [this](double alpha) {
+        this->alpha = alpha;
+        this->repaint();
+    });
+
+    init();
+    //    testInit();
+}
+
+void Grid::setGridData(const GridData &data)
+{
+    gridData = data;
+    this->repaint();
+}
+
+GridData Grid::getGridData()
+{
+    return gridData;
+}
+
+void Grid::setFixedSize(int w, int h)
+{
+    QWidget::setFixedSize(w, h);
+    clearInit();
+    init();
+    //    testInit();
+}
+
+void Grid::paintEvent(QPaintEvent*)
+{
+    QPainter p(this);
+
+//    customMatrix(p);
+    //        stdMatrix(p);
+    //    testMatrix(p);
+    customMatrixClip(p);
+//    customMatrixFrustum(p);
+
+    QString text = "Some foo goes here";
+    QFontMetrics metrics(p.font());
+    resize(metrics.size(0, text));
+    p.drawText(rect(), Qt::AlignCenter, text);
+}
+
+void Grid::init(int count)
+{
+    //создаем вершины - точки
+    //    const double magic = (double)this->width() / (double)this->height(); // соотношение сторон
+    countVertiacal = count;//количество ячеек по вертикали(считаем слева на право)
+    countHorizontal = count;//количество ячеек по горизонтали(считаем сверху вниз)
+    // всего ячеек countHorizontal x countVertiacal
+    const int pointHorizontal = countHorizontal * 2 + 2;//6
+    const int pointVertiacal = countVertiacal * 2 - 2;//2
+    const int pointCount = pointHorizontal + pointVertiacal;
+    const double intervalHorizontal = 2 / (double)countHorizontal; // 1
+    const double intervalVertical = 2 / (double)countVertiacal;// 1
+    double currentIntHor = 1;// Спуск сверху вниз
+    double currentIntVer = -1 + intervalVertical;//спуск слева направо
+    for (int i = 0; i < pointCount; ++i) {
+        if (i < pointHorizontal) {
+            if (i % 2) {
+                vertices.append(Vector({1, currentIntHor, 0, 1}));//выполняется вторым
+                currentIntHor -= intervalHorizontal;
+            } else {
+                vertices.append(Vector({-1, currentIntHor, 0, 1}));//Выполняется первым
+            }
+        } else {
+            if (i % 2) {
+                vertices.append(Vector({currentIntVer, -1, 0, 1}));//выполняется вторым
+                currentIntVer += intervalVertical;
+            } else {
+                vertices.append(Vector({currentIntVer, 1, 0, 1})); //Выполняется первым
+            }
+        }
+    }
+
+    //Создаем пары индексов вершин для лниний
+    const int vertical = countHorizontal + 1;//пары по вертикали
+    const int horizontal = countVertiacal + 1;
+    for (int i = 0; i < vertical; ++i) {
+        edges.append({i*2, i*2 + 1});
+    }
+    sizeVertical = vertical;
+    const int lastHorIndex = edges.size() - 1;
+    std::array<int, 2> lastHorVal = edges[lastHorIndex];
+    for (int i = 0; i < horizontal; ++i){
+        if (i == 0) {//первая строка
+            edges.append({0, lastHorVal[0]});
+        } else if (i == horizontal - 1) {//последнияя строка
+            edges.append({1, lastHorVal[1]});
+        } else {
+            const int magic = 2 * i;
+            edges.append({lastHorVal[1] + magic - 1, lastHorVal[1] + magic});
+        }
+    }
+}
+
+void Grid::initPoints(int count)
+{
+    double interval = 2 / (double)count;
+    double y = 1;
+    for (int i = 0; i < count; ++i) {
+        double x = -1;
+        for (int a = 0; a < count; ++a) {
+            points.append(Vector({x, y, 0, 1}));
+            x += interval;
+        }
+        y -= interval;
+    }
+}
+
+double Grid::degreesToRadians(double degress)
+{
+    const double PI  = 3.141592653589793238463;
+    double radians = PI / 180 * degress;
+    return radians;
+}
+
+void Grid::clearInit()
+{
+    vertices.clear();
+    edges.clear();
+}
+
+void Grid::customMatrix(QPainter &p)
+{
+    M4x4 m = Matrix::getRotationZ(degreesToRadians(gridData.rotationZ));
+    m = Matrix::multiply(
+                Matrix::getTranslation(0, 0, 1),//
+                m);
+    m = Matrix::multiply(
+                Matrix::getLookAt(
+                    Vector({0, 0, 0, 1}), // где наблюдатель стоит
+                    Vector({degreesToRadians(gridData.x), degreesToRadians(gridData.y), cameraZ, 0}), // в какую точку смотреть
+                    Vector({0, 1, 0, 1})
+                    ),
+                m);
+    m = Matrix::multiply(
+                Matrix::getPerspectiveProjection(
+                    90, this->width() / this->height(),
+                    near, far),
+                m);
+
+    QList<Vector> sceneVertices;
+    for (int i = 0; i < vertices.size(); i++) {
+        Vector vertex = Matrix::multiplyVector(
+                    m,
+                    vertices[i]);
+        CoorVector coorVertex = vertex.getCoorVector();
+        //Делим только x y на w
+//        coorVertex.x = coorVertex.x / coorVertex.w * (this->width() / 2);
+//        coorVertex.y = coorVertex.y / coorVertex.w * (this->width() / 2);
+        //Делим на w
+        coorVertex.x = coorVertex.x / coorVertex.w;
+        coorVertex.y = coorVertex.y / coorVertex.w;
+        coorVertex.z = coorVertex.z / coorVertex.w;
+        coorVertex.w = coorVertex.w / coorVertex.w;
+
+        sceneVertices.append(Vector({coorVertex}));
+    }
+
+    //Инверсия работает
+//    M4x4 invM;
+//    bool isInvM = Matrix::getInverstMatrix(m, invM);
+//    if (isInvM) {
+//        for (int i = 0; i < 2; ++i) {
+//            Vector vertex = Matrix::multiplyVector(
+//                        invM,
+//                        sceneVertices[i]);
+//            auto coor = vertex.getCoorVector();
+//            qDebug() << "id:" << i << coor.x << coor.y << (int)coor.z << coor.w;
+//        }
+//    }
+
+    //Провекрка дистанции
+    QList<QVector4D> vectors;
+    for (int i = 0; i < 3; ++i) {
+        CoorVector coor = sceneVertices[i + 5].getCoorVector();
+//        Vector vertex = Matrix::multiplyVector(
+//                    m,
+//                    vertices[i]);
+        QVector4D vector = QVector4D(coor.x, coor.y, coor.z, coor.w);
+        qDebug() << coor.x << coor.y << coor.z;
+
+        vectors.append(vector);
+    }
+
+    //Находим точки
+//    auto p1 = sceneVertices[edges[0][0]].getCoorVector();
+//    auto p2 =sceneVertices[edges[0][1]].getCoorVector();
+//    auto p3 =sceneVertices[edges[lastInxVertical][0]].getCoorVector();
+//    auto p4 =sceneVertices[edges[lastInxVertical][1]].getCoorVector();
+//    qDebug() << "points:";
+//    qDebug() << p1.x << p1.y << p1.z;
+//    qDebug() << p2.x << p2.y << p2.z;
+//    qDebug() << p3.x << p3.y << p3.z;
+//    qDebug() << p4.x << p4.y << p4.z;
+
+    PlaneCoefficients planeCoef = Matrix::getPlaneCoefficients(vectors[0].toVector3D(), vectors[1].toVector3D(), vectors[2].toVector3D());
+//    double z1 = Matrix::getZ(planeCoef, vectors[0].x(), vectors[0].y());
+//    double z2 = Matrix::getZ(planeCoef, vectors[1].x(), vectors[1].y());
+//    double distance = Matrix::getDistance(
+//                {vectors[0].x(), vectors[0].y(), (float)z1},
+//                {vectors[1].x(), vectors[1].y(), (float)z2}
+//                );
+//    double distance = Matrix::getDistance(
+//                vectors[0], vectors[1]);
+//    double w = vectors[0].w();
+//    qDebug() << planeCoef.A << planeCoef.B << planeCoef.C << planeCoef.D
+//             << z1 << z2 << "distance:" << distance;
+//    qDebug() << "distance:" << distance;
+
+//    qDebug() << "init" << edges.size();
+
+    for (int i = 0, l = edges.size(); i < l; i++) {
+        std::array<int, 2> e = edges[i];
+
+        CoorVector coorP1 = sceneVertices[e[0]].getCoorVector();
+        CoorVector coorP2 = sceneVertices[e[1]].getCoorVector();
+
+        //        qDebug() << QPoint(coorP1.x + this->width() / 2, -(coorP1.y - this->height() / 2))
+        //                 << QPoint(coorP2.x + this->width() / 2, -(coorP2.y - this->height() / 2));
+        p.drawLine(coorP1.x + this->width() / 2, this->height() / 2 - coorP1.y,
+                   coorP2.x + this->width() / 2, this->height() / 2 - coorP2.y);
+    }
+}
+
+void Grid::customMatrixClip(QPainter &p)
+{
+    M4x4 m = Matrix::getRotationZ(degreesToRadians(gridData.rotationZ));
+    double scale = gridData.scale;
+
+    double multi = 200;
+    m = Matrix::multiply(
+                Matrix::getScale(scale, scale, scale),//countHorizontal
+                m);
+
+    m = Matrix::multiply(
+                Matrix::getTranslation(0, 0, 1),//
+                m);
+
+    m = Matrix::multiply(Matrix::getRotationX(-degreesToRadians(gridData.pitchingX)),
+                         m);
+
+    m = Matrix::multiply(Matrix::getRotationY(degreesToRadians(gridData.pitchingY)),
+                         m);
+
+    m = Matrix::multiply(
+                Matrix::getLookAt(
+                    Vector({0, 0, 0, 1}), // где наблюдатель стоит
+                    Vector({degreesToRadians(gridData.x), degreesToRadians(gridData.y), cameraZ, 0}), // в какую точку смотреть
+                    Vector({0, 1, 0, 1})
+                    ),
+                m);
+
+    m = Matrix::multiply(
+                Matrix::getFrustum(-1, 1, -1, 1, near, far),
+                m
+                );
+
+    QList<Vector> sceneVertices;
+    for (int i = 0; i < vertices.size(); i++) {
+        Vector vertex = Matrix::multiplyVector(
+                    m,
+                    vertices[i]);
+
+        CoorVector coorVertex = vertex.getCoorVector();
+
+        sceneVertices.append(Vector({coorVertex}));
+    }
+
+    qDebug() << "init" << edges.size();
+
+    for (int i = 0, l = edges.size(); i < l; i++) {
+        std::array<int, 2> e = edges[i];
+
+//        if ()
+//        TwoVectors t = Vector::clip(sceneVertices[e[0]], sceneVertices[e[1]], near);
+//        CoorVector coorP1 = t.a.getCoorVector();
+//        CoorVector coorP2 = t.b.getCoorVector();
+        //Если линии за камерой то не рисуем!!!
+//        if (coorP1.w > 100 || coorP2.w > 100) continue;
+//        qDebug() << edges[i][0] + 1 << edges[i][1] + 1
+//                << coorP1.x << coorP1.y
+//                << coorP2.x << coorP2.y;
+
+        CoorVector coorP1 = sceneVertices[e[0]].getCoorVector();
+        CoorVector coorP2 = sceneVertices[e[1]].getCoorVector();
+        coorP1.x = coorP1.x / sceneVertices[e[0]].getCoorVector().w * (double)(this->width() / 2);
+        coorP1.y = coorP1.y / coorP1.w * (double)(this->height() / 2);
+        coorP2.x = coorP2.x / coorP2.w * (double)(this->width() / 2);
+        coorP2.y = coorP2.y / coorP2.w * (double)(this->height() / 2);
+
+//        qDebug() << edges[i][0] + 1 << edges[i][1] + 1
+//                << QPoint(coorP1.x + this->width() / 2, -(coorP1.y - this->height() / 2))
+//                << QPoint(coorP2.x + this->width() / 2, -(coorP2.y - this->height() / 2));
+//        if ((edges[i][0] + 1) != 2) continue;
+//        qDebug() << edges[i][0] + 1 << edges[i][1] + 1
+//                << QPoint(coorP1.x, coorP1.y)
+//                << QPoint(coorP2.x, coorP2.y);
+        p.drawLine(coorP1.x + (double)this->width() / 2, this->height() / 2 - coorP1.y,
+                   coorP2.x + (double)this->width() / 2, this->height() / 2 - coorP2.y);
+    }
+}
+
+void Grid::paintMatrix(M4x4 m, QPainter &p)
+{
+    p.setRenderHint(QPainter::Antialiasing);
+    QList<Vector> sceneVertices;
+    for (int i = 0; i < vertices.size(); i++) {
+        Vector vertex = Matrix::multiplyVector(
+                    m,
+                    vertices[i]);
+
+        CoorVector coorVertex = vertex.getCoorVector();
+        coorVertex.x = coorVertex.x / coorVertex.w * (this->width() / 2);
+        coorVertex.y = coorVertex.y / coorVertex.w * (this->width() / 2);
+
+        sceneVertices.append(Vector({coorVertex}));
+    }
+
+    for (int i = 0, l = edges.size(); i < l; i++) {
+        std::array<int, 2> e = edges[i];
+
+        CoorVector coorP1 = sceneVertices[e[0]].getCoorVector();
+        CoorVector coorP2 = sceneVertices[e[1]].getCoorVector();
+
+        p.drawLine(coorP1.x + this->width() / 2, this->height() / 2 + coorP1.y,
+                   coorP2.x + this->width() / 2, this->height() / 2 + coorP2.y);
+    }
+}
+
+
+void Grid::customMatrixFrustum(QPainter &p)
+{
+    double height = gridData.height;//переводим мм в метры
+    double cellCount = height * std::tan(degreesToRadians(alpha)) / bmm;
+//    double intCellCount = ((int)ceil(cellCount) % 2 == 0) ? ceil(cellCount) : ceil(cellCount) + 1;
+
+    //ширина 4
+    double k1 = 6;//коэффицент обрезание просмотра сетки.
+    double scale = 3;//увеличиваем сетку в масштабе
+    double allCell = cellCount * scale * k1;
+    int allIntCell = ((int)ceil(allCell) % 2 == 0) ? ceil(allCell) : ceil(allCell) + 1;//размер всей сетки, чтобы соотношение было 2x2, 4x4, 6x6
+    clearInit();
+    init(allIntCell);//текстура
+    double k2 = allIntCell / allCell;//Во сколько новая сетка больше той, которая нужна
+
+    M4x4 m = Matrix::getScale(scale, scale, scale);
+    m = Matrix::multiply(
+                Matrix::getTranslation(0, 0, 1),
+                m);
+    m = Matrix::multiply(Matrix::getRotationZ(-degreesToRadians(gridData.rotationZ)),
+                         m);
+//    m = Matrix::multiply(Matrix::getRotationX(-degreesToRadians(gridData.pitchingX)),
+//                         m);
+//    m = Matrix::multiply(Matrix::getRotationY(degreesToRadians(gridData.pitchingY)),
+//                         m);
+    m = Matrix::multiply(
+                Matrix::getLookAt(
+                    Vector({0, 0, 0, 1}), // where is the observer
+                    Vector({-degreesToRadians(gridData.x) - degreesToRadians(gridData.pitchingX), -degreesToRadians(gridData.y) -  degreesToRadians(gridData.pitchingY), -1, 1}), // where to look
+                    Vector({0, 1, 0, 1})
+                    ),
+                m);
+    m = Matrix::multiply(
+                Matrix::getFrustum(-1 / k1 / k2, 1 / k1 / k2, -1 / k1 / k2, 1 / k1 / k2, -1, -1000),
+                m
+                );
+
+//    double multi = (double)intCellCount / cellCount;//во сколько раз новая сетка больше заданой
+//    qDebug() << "multi:" << multi << 1 / multi;
+
+    p.setRenderHint(QPainter::Antialiasing);
+    QList<Vector> sceneVertices;
+    for (int i = 0; i < vertices.size(); i++) {
+        Vector vertex = Matrix::multiplyVector(
+                    m,
+                    vertices[i]);
+
+        CoorVector coorVertex = vertex.getCoorVector();
+//        double w = coorVertex.w;
+        double w = (coorVertex.w < 0) ? -coorVertex.w : coorVertex.w;
+//        double w = coorVertex.w;
+//        if (coorVertex.w < -1) {
+//            w = -1;
+//        } else if(coorVertex.w > 1) {
+//            w = 1;
+//        }
+        coorVertex.x = coorVertex.x / w * (this->width() / 2);
+        coorVertex.y = coorVertex.y / w * (this->width() / 2);
+
+        sceneVertices.append(Vector({coorVertex}));
+    }
+
+    std::array<int, 2> verEdges = {0, 0};
+    std::array<int, 2> endVerEdges = {0, 0};
+    std::array<int, 2> horEdges = {0, 0};
+    std::array<int, 2> endHorEdges = {0, 0};
+    DistanceLine verDistLine = {1000000, DirPoint::Plus};
+    DistanceLine horDistLine = {1000000, DirPoint::Plus};
+    for (int i = 0, l = edges.size(); i < l; i++) {
+        std::array<int, 2> e = edges[i];
+
+        CoorVector coorP1 = sceneVertices[e[0]].getCoorVector();
+        CoorVector coorP2 = sceneVertices[e[1]].getCoorVector();
+
+        QPoint p1 = QPoint(coorP1.x + this->width() / 2, this->height() / 2 - coorP1.y);
+        QPoint p2 = QPoint(coorP2.x + this->width() / 2, this->height() / 2 - coorP2.y);
+        DistanceLine distEdge = Matrix::getDistanceLine({(double)p1.x(), (double)p1.y()}, {(double)p2.x(), (double)p2.y()}, moveP);
+        //Находим линии ближайшие к точке
+        if (sizeVertical >= i) {
+            if (distEdge.d < horDistLine.d) {
+                horDistLine = distEdge;
+                horEdges = e;
+                if (distEdge.dirPoint == DirPoint::Plus) {
+                    endHorEdges = i + 1 < edges.size() ?  edges[i + 1] : edges[i];
+                } else {
+                    endHorEdges = i - 1 > 0 ? edges[i - 1] : edges[i];
+                }
+            }
+        } else {
+            if (distEdge.d < verDistLine.d) {
+                verDistLine = distEdge;
+                verEdges = e;
+                if (distEdge.dirPoint == DirPoint::Plus) {
+                    endVerEdges = i - 1 < edges.size() ?  edges[i - 1] : edges[i];
+                } else {
+                    endVerEdges = i + 1 > 0 ? edges[i + 1] : edges[i];
+                }
+            }
+        }
+
+        p.drawLine(p1, p2);
+    }
+
+    //Перестановка, чтобы отрисовка работала нормально
+    std::array<int, 2> middleEdges = {0, 0};
+    if (endVerEdges[0] < verEdges[0]) {
+        middleEdges = verEdges;
+        verEdges = endVerEdges;
+        endVerEdges = middleEdges;
+    }
+    middleEdges = {0, 0};
+    if (endHorEdges[0] > horEdges[0]) {
+        middleEdges = horEdges;
+        horEdges = endHorEdges;
+        endHorEdges = middleEdges;
+    }
+
+    CoorVector coorP1 = sceneVertices[horEdges[0]].getCoorVector();
+    CoorVector coorP2 = sceneVertices[horEdges[1]].getCoorVector();
+    p.setBrush(QBrush(QColor(Qt::green)));
+    p.setPen(QPen(QColor(Qt::green)));
+    p.drawLine(coorP1.x + this->width() / 2, this->height() / 2 - coorP1.y,
+               coorP2.x + this->width() / 2, this->height() / 2 - coorP2.y);
+
+    coorP1 = sceneVertices[endHorEdges[0]].getCoorVector();
+    coorP2 = sceneVertices[endHorEdges[1]].getCoorVector();
+    p.setBrush(QBrush(QColor(Qt::green)));
+    p.setPen(QPen(QColor(Qt::green)));
+    p.drawLine(coorP1.x + this->width() / 2, this->height() / 2 - coorP1.y,
+               coorP2.x + this->width() / 2, this->height() / 2 - coorP2.y);
+
+    coorP1 = sceneVertices[verEdges[0]].getCoorVector();
+    coorP2 = sceneVertices[verEdges[1]].getCoorVector();
+    p.setBrush(QBrush(QColor(Qt::green)));
+    p.setPen(QPen(QColor(Qt::green)));
+    p.drawLine(coorP1.x + this->width() / 2, this->height() / 2 - coorP1.y,
+               coorP2.x + this->width() / 2, this->height() / 2 - coorP2.y);
+
+    coorP1 = sceneVertices[endVerEdges[0]].getCoorVector();
+    coorP2 = sceneVertices[endVerEdges[1]].getCoorVector();
+    p.setBrush(QBrush(QColor(Qt::green)));
+    p.setPen(QPen(QColor(Qt::green)));
+    p.drawLine(coorP1.x + this->width() / 2, this->height() / 2 - coorP1.y,
+               coorP2.x + this->width() / 2, this->height() / 2 - coorP2.y);
+
+    p.drawEllipse(QPoint(moveP.x, moveP.y), 2, 2);
+
+    double dx = vertices[verEdges[0]].getCoorVector().x;//x на исходной сетке
+    double dy = vertices[horEdges[0]].getCoorVector().y;//y на исходной сетке
+
+    qDebug() << "w:"
+             << "ver 0:" << sceneVertices[verEdges[0]].getCoorVector().w
+            << "ver 1:" << sceneVertices[verEdges[1]].getCoorVector().w
+            << "hor 0:" << sceneVertices[horEdges[0]].getCoorVector().w
+            << "hor 1:" << sceneVertices[verEdges[1]].getCoorVector().w;
+
+//    qDebug() << "dx, dy" << dx << dy << verEdges[0];
+//    qDebug() << "vertices[verEdges[0]]" << vertices[verEdges[0]].getCoorVector().x << vertices[verEdges[0]].getCoorVector().y;
+    double dPlus = (double)scale / (double)allIntCell;//Чтобы было по середине сетки
+    M4x4 mp = Matrix::getScale((double)scale / allIntCell, (double)scale / allIntCell, (double)scale / allIntCell);
+    mp = Matrix::multiply(
+                Matrix::getTranslation(dx * scale + dPlus, dy * scale + dPlus, 1),
+                mp);
+    mp = Matrix::multiply(Matrix::getRotationZ(-degreesToRadians(gridData.rotationZ)),
+                         mp);
+//    m = Matrix::multiply(Matrix::getRotationX(-degreesToRadians(gridData.pitchingX)),
+//                         m);
+//    m = Matrix::multiply(Matrix::getRotationY(degreesToRadians(gridData.pitchingY)),
+//                         m);
+    mp = Matrix::multiply(
+                Matrix::getLookAt(
+                    Vector({0, 0, 0, 1}), // where is the observer
+                    Vector({-degreesToRadians(gridData.x) - degreesToRadians(gridData.pitchingX), -degreesToRadians(gridData.y) -  degreesToRadians(gridData.pitchingY), -1, 1}), // where to look
+                    Vector({0, 1, 0, 1})
+                    ),
+                mp);
+    mp = Matrix::multiply(
+                Matrix::getFrustum(-1 / k1 / k2, 1 / k1 / k2, -1 / k1 / k2, 1 / k1 / k2, -1, -1000),
+                mp
+                );
+
+    QList<Vector> scenceVerticesPoints;
+    for (int i = 0; i < points.size(); i++) {
+        Vector vertex = Matrix::multiplyVector(
+                    mp,
+                    points[i]);
+
+        CoorVector coorVertex = vertex.getCoorVector();
+        double w = (coorVertex.w < 0) ? -coorVertex.w : coorVertex.w;
+        coorVertex.x = coorVertex.x / w * (this->width() / 2);
+        coorVertex.y = coorVertex.y / w * (this->width() / 2);
+
+        scenceVerticesPoints.append(Vector({coorVertex}));
+    }
+
+    for (int i = 0, l = points.size(); i < l; i++) {
+        CoorVector coorP = scenceVerticesPoints[i].getCoorVector();
+        QPoint point = QPoint(coorP.x + this->width() / 2, this->height() / 2 - coorP.y);
+
+        p.drawEllipse(point, 2, 2);
+    }
+}
+
+//аналитическая геометрия
+//Преобрахование прямоугольных координат
+void Grid::stdMatrix(QPainter &p)
+{
+    QMatrix4x4 m;
+    //    double scale = gridData.scale / 10;
+
+    //    double rgswgh = 50 * 0.48 * 1000 * scale;
+    //    const double magic = (double)this->width() / (double)this->height();
+
+    //    m.rotate(0, 0, 0, 1);
+    float scale = 1.5;
+    m.scale(scale, scale, scale);
+    m.translate(0, 0, -1);//gridData.height * HEUGHT);
+    m.lookAt({0, 0, 0},
+             {(float)degreesToRadians(gridData.x), (float)degreesToRadians(gridData.y), -1},
+             {0, 1, 0});
+    m.frustum(-1, 1, -1, 1, -1, -1000);
+    m.perspective(90, (float)this->width() / (float)this->height(), -1, -1000);
+    //    m.ortho(-1, 1, -1, 1, -1, -1000);
+
+    QString str = "before:";
+    //    for (int i = 0; i < 16; ++i) {
+    //        str += QString::number(m.data()[i]) + "   ";
+    //    }
+    QList<QVector4D> sceneVertices;
+    str = "after:";
+    for (int i = 0; i < 16; ++i) {
+        str += QString::number(m.data()[i]) + "   ";
+    }
+    qDebug() << str;
+    for (int i = 0; i < vertices.size(); i++) {
+        CoorVector coorV = vertices[i].getCoorVector();
+        QVector4D v = m.map(QVector4D(coorV.x, coorV.y, coorV.z, coorV.w));
+        qDebug() << v.x() << v.y() << v.z() << v.w();
+        v.setX(v.x() / v.w() * (this->width() / 2));
+        v.setY(v.y() / v.w() * (this->height() / 2));
+        sceneVertices.append(v);
+    }
+
+    for (int i = 0, l = edges.size(); i < l; i++) {
+        std::array<int, 2> e = edges[i];
+
+        QVector4D p1 = sceneVertices[e[0]];
+        QVector4D p2 = sceneVertices[e[1]];
+        //        qDebug() << p1.x() << -(p1.y() - this->height() / 2);
+        p.drawLine(p1.x() + this->width() / 2, -(p1.y() - this->height() / 2),
+                   p2.x() + this->width() / 2, -(p2.y() - this->height() / 2));
+    }
+}
+
+void Grid::testMatrix(QPainter &p)
+{
+    M4x4 m = Matrix::getRotationZ(degreesToRadians(0));//единияная матрица
+    double scale = 10;
+    //    m = Matrix::multiply(
+    //                Matrix::getScale(scale * 300, scale * 300 , scale * 300),//countHorizontal
+    //                m);
+    m = Matrix::multiply(
+                Matrix::getTranslation(0, 0, 2),//
+                m);
+    const double x = degreesToRadians(0);
+    const double y = degreesToRadians(10);
+    qDebug() << x << y;
+    m = Matrix::multiply(
+                Matrix::getLookAt(
+                    Vector({0, 0, 0, 1}), // где наблюдатель стоит
+                    Vector({1, 0.5, -1, 1}), // в какую точку смотреть
+                    Vector({0, 1, 0, 1})
+                    ),
+                m);
+    double near = -1;
+    m = Matrix::multiply(
+                Matrix::getPerspectiveProjection(
+                    90, (double)this->width() / (double)this->height(),
+                    near, -1000),
+                m);
+    Matrix::debugM4x4(m);
+    QList<Vector> sceneVertices;
+    for (int i = 0; i < vertices.size(); i++) {
+        qDebug() << i << vertices[i].getCoorVector().x << vertices[i].getCoorVector().y;
+        Vector vertex = Matrix::multiplyVector(
+                    m,
+                    vertices[i]);
+
+        CoorVector coorVertex = vertex.getCoorVector();
+        coorVertex.x = coorVertex.x;
+        coorVertex.y = coorVertex.y;
+        //        qDebug() << i << coorVertex.x << coorVertex.y;
+
+        sceneVertices.append(Vector({coorVertex}));
+    }
+
+    for (int i = 0, l = edges.size(); i < l; i++) {
+        std::array<int, 2> e = edges[i];
+
+        TwoVectors t = Vector::clip(sceneVertices[e[0]], sceneVertices[e[1]], 0);
+        CoorVector coorP1 = t.a.getCoorVector();
+        CoorVector coorP2 = t.b.getCoorVector();
+
+        qDebug() << edges[i][0] + 1 << edges[i][1] + 1
+                << coorP1.x << coorP1.y
+                << coorP2.x << coorP2.y;
+
+        coorP1.x = coorP1.x / coorP1.w * (double)(this->width() / 2);
+        coorP1.y = coorP1.y / coorP1.w * (double)(this->height() / 2);
+        coorP2.x = coorP2.x / coorP2.w * (double)(this->width() / 2);
+        coorP2.y = coorP2.y / coorP2.w * (double)(this->height() / 2);
+
+        //        qDebug() << edges[i][0] + 1 << edges[i][1] + 1
+        //                << QPoint(coorP1.x + this->width() / 2, -(coorP1.y - this->height() / 2))
+        //                << QPoint(coorP2.x + this->width() / 2, -(coorP2.y - this->height() / 2));
+        //        if ((edges[i][0] + 1) != 2) continue;
+        //        qDebug() << edges[i][0] + 1 << edges[i][1] + 1
+        //                << QPoint(coorP1.x, coorP1.y)
+        //                << QPoint(coorP2.x, coorP2.y);
+        p.drawLine(coorP1.x + (double)this->width() / 2, -(coorP1.y - (double)this->height() / 2),
+                   coorP2.x + (double)this->width() / 2, -(coorP2.y - (double)this->height() / 2));
+    }
+}
+
+void Grid::testInit()
+{
+    //создаем вершины - точки
+    const double magic = (double)this->width() / (double)this->height(); // соотношение сторон
+    countHorizontal = 10;//количество ячеек по горизонтали
+    countVertiacal = 10;// количество ячеек по вертикали
+    // всего ячеек countHorizontal x countVertiacal
+    const int pointHorizontal = countHorizontal * 2 + 2;//6
+    const int pointVertiacal = countVertiacal * 2 - 2;//2
+    const int pointCount = pointHorizontal + pointVertiacal;
+    const double intervalHorizontal = 2 / (double)countHorizontal; // 1
+    const double intervalVertical = 2 / (double)countVertiacal;// 1
+    double currentIntHor = 1;// Спуск сверху вниз
+    double currentIntVer = -1 + intervalVertical;//спуск слева направо
+    double w = 1;
+    for (int i = 0; i < pointCount; ++i) {
+        if (i < pointHorizontal) {
+            if (i % 2) {
+                vertices.append(Vector({1, currentIntHor, 0, w}));//выполняется вторым
+                currentIntHor -= intervalHorizontal;
+            } else {
+                vertices.append(Vector({-1, currentIntHor, 0, w}));//Выполняется первым
+            }
+        } else {
+            if (i % 2) {
+                vertices.append(Vector({currentIntVer, -1, 0, w}));//выполняется вторым
+                currentIntVer += intervalVertical;
+            } else {
+                vertices.append(Vector({currentIntVer, 1, 0, w})); //Выполняется первым
+            }
+        }
+    }
+
+    //Создаем пары индексов вершин для лниний
+    const int vertical = countHorizontal + 1;
+    const int horizontal = countVertiacal + 1;
+    for (int i = 0; i < vertical; ++i) {
+        edges.append({i*2, i*2 + 1});
+    }
+    const int lastHorIndex = edges.size() - 1;
+    std::array<int, 2> lastHorVal = edges[lastHorIndex];
+    for (int i = 0; i < horizontal; ++i){
+        if (i == 0) {//первая строка
+            edges.append({0, lastHorVal[0]});
+        } else if (i == horizontal - 1) {//последнияя строка
+            edges.append({1, lastHorVal[1]});
+        } else {
+            const int magic = 2 * i;
+            edges.append({lastHorVal[1] + magic - 1, lastHorVal[1] + magic});
+        }
+    }
+}
+
+void Grid::debugM4x4(const M4x4 &m)
+{
+    qDebug() << "matrix:";
+    for (int i = 0; i < 4; ++i) {
+        QString str = QString::number(i) + ": ";
+        for (int a = 0; a < 4; ++a) {
+            str += QString::number(m[i][a]) + " ";
+        }
+        qDebug() << str;
+    }
+}
+
+void Grid::mouseMoveEvent(QMouseEvent *event)
+{
+    QWidget::mouseMoveEvent(event);
+
+    moveP = {(double)event->pos().x(), (double)event->pos().y()};
+//    qDebug() << "move:" << (double)event->pos().x() << (double)event->pos().y();
+    this->repaint();
+}
